@@ -32,7 +32,6 @@ NSHashTable *sourceSet;
 NSHashTable *destinationSet;
 NSMutableDictionary *sysexMessage;
 NSMutableDictionary *packetLists;
-NSMutableDictionary *packets;
 NSMutableDictionary *deviceNames;
 UINavigationController *navigationController;
 
@@ -117,13 +116,8 @@ void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
 
                     MIDIPacketList *packetListPtr = (MIDIPacketList *)((NSNumber *)packetLists[endpointNumber]).longValue;
                     if (packetListPtr) {
-                        MIDIPacket *packet = (MIDIPacket *)((NSNumber *)packets[endpointNumber]).longValue;
-                        if (packet == nil) {
-                            packet = MIDIPacketListInit(packetListPtr);
-                            packets[endpointNumber] = [NSNumber numberWithLong:(long)packet];
-                        }
+                        MIDIPacket *packet = MIDIPacketListInit(packetListPtr);
                         packet = MIDIPacketListAdd(packetListPtr, 1024, packet, mach_absolute_time(), length, byteArray);
-                        packets[endpointNumber] = [NSNumber numberWithLong:(long)packet];
 
                         OSStatus err;
                         err = MIDISend(outputPort, endpoint, packetListPtr);
@@ -366,7 +360,6 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
         destinationSet = [[NSHashTable alloc] init];
         sysexMessage = [[NSMutableDictionary alloc] init];
         packetLists = [[NSMutableDictionary alloc] init];
-        packets = [[NSMutableDictionary alloc] init];
         deviceNames = [[NSMutableDictionary alloc] init];
 
         MIDIClientCreate(CFSTR("MidiPlugin"), NULL, NULL, &midiClient);
@@ -433,7 +426,6 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                         Byte *packetBuffer = new Byte[1024];
                         MIDIPacketList *packetListPtr = (MIDIPacketList *)packetBuffer;
                         packetLists[endpointNumber] = [NSNumber numberWithLong:(long)packetListPtr];
-                        packets[endpointNumber] = [NSNumber numberWithLong:(long)MIDIPacketListInit(packetListPtr)];
                     }
 
                 }
