@@ -5,8 +5,24 @@
 
 #import "MidiPlugin.h"
 
-typedef int ( __cdecl *OnMidiNoteOnDelegate )( const char*, int, int, int, int );
-typedef int ( __cdecl *OnMidiNoteOffDelegate )( const char*, int, int, int, int );
+typedef void ( __cdecl *OnMidiNoteOnDelegate )( const char*, int, int, int, int );
+typedef void ( __cdecl *OnMidiNoteOffDelegate )( const char*, int, int, int, int );
+typedef void ( __cdecl *OnMidiPolyphonicAftertouchDelegate )( const char*, int , int , int , int );
+typedef void ( __cdecl *OnMidiControlChangeDelegate )( const char*, int , int , int , int );
+typedef void ( __cdecl *OnMidiProgramChangeDelegate )( const char*, int , int , int );
+typedef void ( __cdecl *OnMidiChannelAftertouchDelegate )( const char*, int , int , int );
+typedef void ( __cdecl *OnMidiPitchWheelDelegate )( const char*, int , int , int );
+typedef void ( __cdecl *OnMidiSystemExclusiveDelegate )( const char*, int , unsigned char*, int );
+typedef void ( __cdecl *OnMidiTimeCodeQuarterFrameDelegate )( const char*, int , int );
+typedef void ( __cdecl *OnMidiSongSelectDelegate )( const char*, int , int );
+typedef void ( __cdecl *OnMidiSongPositionPointerDelegate )( const char*, int , int );
+typedef void ( __cdecl *OnMidiTuneRequestDelegate )( const char*, int );
+typedef void ( __cdecl *OnMidiTimingClockDelegate )( const char*, int );
+typedef void ( __cdecl *OnMidiStartDelegate )( const char*, int );
+typedef void ( __cdecl *OnMidiContinueDelegate )( const char*, int );
+typedef void ( __cdecl *OnMidiStopDelegate )( const char*, int );
+typedef void ( __cdecl *OnMidiActiveSensingDelegate )( const char*, int );
+typedef void ( __cdecl *OnMidiResetDelegate )( const char*, int );
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +35,22 @@ extern "C" {
     const char* getDeviceName(const char* deviceId);
     void SetMidiNoteOnCallback(OnMidiNoteOnDelegate callback);
     void SetMidiNoteOffCallback(OnMidiNoteOffDelegate callback);
+    void SetMidiPolyphonicAftertouchDelegate(OnMidiPolyphonicAftertouchDelegate callback);
+    void SetMidiControlChangeDelegate(OnMidiControlChangeDelegate callback);
+    void SetMidiProgramChangeDelegate(OnMidiProgramChangeDelegate callback);
+    void SetMidiChannelAftertouchDelegate(OnMidiChannelAftertouchDelegate callback);
+    void SetMidiPitchWheelDelegate(OnMidiPitchWheelDelegate callback);
+    void SetMidiSystemExclusiveDelegate(OnMidiSystemExclusiveDelegate callback);
+    void SetMidiTimeCodeQuarterFrameDelegate(OnMidiTimeCodeQuarterFrameDelegate callback);
+    void SetMidiSongSelectDelegate(OnMidiSongSelectDelegate callback);
+    void SetMidiSongPositionPointerDelegate(OnMidiSongPositionPointerDelegate callback);
+    void SetMidiTuneRequestDelegate(OnMidiTuneRequestDelegate callback);
+    void SetMidiTimingClockDelegate(OnMidiTimingClockDelegate callback);
+    void SetMidiStartDelegate(OnMidiStartDelegate callback);
+    void SetMidiContinueDelegate(OnMidiContinueDelegate callback);
+    void SetMidiStopDelegate(OnMidiStopDelegate callback);
+    void SetMidiActiveSensingDelegate(OnMidiActiveSensingDelegate callback);
+    void SetMidiResetDelegate(OnMidiResetDelegate callback);
 
     extern UIViewController* UnityGetGLViewController();
     extern void UnitySendMessage(const char* obj, const char* method, const char* msg);
@@ -42,6 +74,22 @@ UINavigationController *navigationController;
 
 OnMidiNoteOnDelegate onMidiNoteOn;
 OnMidiNoteOffDelegate onMidiNoteOff;
+OnMidiPolyphonicAftertouchDelegate onMidiPolyphonicAftertouch;
+OnMidiControlChangeDelegate onMidiControlChange;
+OnMidiProgramChangeDelegate onMidiProgramChange;
+OnMidiChannelAftertouchDelegate onMidiChannelAftertouch;
+OnMidiPitchWheelDelegate onMidiPitchWheel;
+OnMidiSystemExclusiveDelegate onMidiSystemExclusive;
+OnMidiTimeCodeQuarterFrameDelegate onMidiTimeCodeQuarterFrame;
+OnMidiSongSelectDelegate onMidiSongSelect;
+OnMidiSongPositionPointerDelegate onMidiSongPositionPointer;
+OnMidiTuneRequestDelegate onMidiTuneRequest;
+OnMidiTimingClockDelegate onMidiTimingClock;
+OnMidiStartDelegate onMidiStart;
+OnMidiContinueDelegate onMidiContinue;
+OnMidiStopDelegate onMidiStop;
+OnMidiActiveSensingDelegate onMidiActiveSensing;
+OnMidiResetDelegate onMidiReset;
 
 void midiPluginInitialize() {
     if (instance == nil) {
@@ -106,6 +154,54 @@ void SetMidiNoteOnCallback(OnMidiNoteOnDelegate callback) {
 void SetMidiNoteOffCallback(OnMidiNoteOffDelegate callback) {
     onMidiNoteOff = callback;
 }
+void SetMidiPolyphonicAftertouchDelegate(OnMidiPolyphonicAftertouchDelegate callback) {
+    onMidiPolyphonicAftertouch = callback;
+}
+void SetMidiControlChangeDelegate(OnMidiControlChangeDelegate callback) {
+    onMidiControlChange = callback;
+}
+void SetMidiProgramChangeDelegate(OnMidiProgramChangeDelegate callback) {
+    onMidiProgramChange = callback;
+}
+void SetMidiChannelAftertouchDelegate(OnMidiChannelAftertouchDelegate callback) {
+    onMidiChannelAftertouch = callback;
+}
+void SetMidiPitchWheelDelegate(OnMidiPitchWheelDelegate callback) {
+    onMidiPitchWheel = callback;
+}
+void SetMidiSystemExclusiveDelegate(OnMidiSystemExclusiveDelegate callback) {
+    onMidiSystemExclusive = callback;
+}
+void SetMidiTimeCodeQuarterFrameDelegate(OnMidiTimeCodeQuarterFrameDelegate callback) {
+    onMidiTimeCodeQuarterFrame = callback;
+}
+void SetMidiSongSelectDelegate(OnMidiSongSelectDelegate callback) {
+    onMidiSongSelect = callback;
+}
+void SetMidiSongPositionPointerDelegate(OnMidiSongPositionPointerDelegate callback) {
+    onMidiSongPositionPointer = callback;
+}
+void SetMidiTuneRequestDelegate(OnMidiTuneRequestDelegate callback) {
+    onMidiTuneRequest = callback;
+}
+void SetMidiTimingClockDelegate(OnMidiTimingClockDelegate callback) {
+    onMidiTimingClock = callback;
+}
+void SetMidiStartDelegate(OnMidiStartDelegate callback) {
+    onMidiStart = callback;
+}
+void SetMidiContinueDelegate(OnMidiContinueDelegate callback) {
+    onMidiContinue = callback;
+}
+void SetMidiStopDelegate(OnMidiStopDelegate callback) {
+    onMidiStop = callback;
+}
+void SetMidiActiveSensingDelegate(OnMidiActiveSensingDelegate callback) {
+    onMidiActiveSensing = callback;
+}
+void SetMidiResetDelegate(OnMidiResetDelegate callback) {
+    onMidiReset = callback;
+}
 
 void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
     ItemCount numOfDevices = MIDIGetNumberOfDevices();
@@ -159,12 +255,30 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                     continue;
                 }
                 else {
-                    NSMutableString* sysex = sysexMessage[endpointId];
-                    [sysex appendString: @","];
-                    [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
+                    NSMutableArray* sysexArray;
+                    NSMutableString* sysex;
+                    if (onMidiSystemExclusive) {
+                        sysexArray = sysexMessage[endpointId];
+                    } else {
+                        sysex = sysexMessage[endpointId];
+                    }
+                    if (onMidiSystemExclusive) {
+                        [sysexArray addObject: [NSNumber numberWithInt:packet->data[dataIndex]]];
+                    } else {
+                        [sysex appendString: @","];
+                        [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
+                    }
                     if (packet->data[dataIndex] == 0xF7) {
                         // sysex finished
-                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
+                        if (onMidiSystemExclusive) {
+                            unsigned char* sysexData = unsigned char[[sysexArray count]];
+                            for (int i = 0; i < [sysexArray count]; i++) {
+                                sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
+                            }
+                            onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, [sysexArray count]);
+                        } else {
+                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
+                        }
                         [sysexMessage removeObjectForKey: endpointId];
                         dataIndex++;
                         continue;
@@ -215,7 +329,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             dataIndex = packet->length;
                             break;
                         }
-                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiPolyphonicAftertouch", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                        if (onMidiPolyphonicAftertouch) {
+                            onMidiPolyphonicAftertouch([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]);
+                        } else {
+                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiPolyphonicAftertouch", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                        }
                         dataIndex += 3;
                         break;
                     case 0xb0:
@@ -224,7 +342,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             dataIndex = packet->length;
                             break;
                         }
-                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiControlChange", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                        if (onMidiControlChange) {
+                            onMidiControlChange([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]);
+                        } else {
+                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiControlChange", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                        }
                         dataIndex += 3;
                         break;
                     case 0xc0:
@@ -233,7 +355,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             dataIndex = packet->length;
                             break;
                         }
-                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiProgramChange", [NSString stringWithFormat:@"%@,0,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1]].UTF8String);
+                        if (onMidiProgramChange) {
+                            onMidiProgramChange([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1]);
+                        } else {
+                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiProgramChange", [NSString stringWithFormat:@"%@,0,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1]].UTF8String);
+                        }
                         dataIndex += 2;
                         break;
                     case 0xd0:
@@ -242,7 +368,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             dataIndex = packet->length;
                             break;
                         }
-                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiChannelPressure", [NSString stringWithFormat:@"%@,0,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1]].UTF8String);
+                        if (onMidiChannelAftertouch) {
+                            onMidiChannelAftertouch([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1]);
+                        } else {
+                            UnitySendMessage(GAME_OBJECT_NAME, "onMidiChannelAftertouch", [NSString stringWithFormat:@"%@,0,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1]].UTF8String);
+                        }
                         dataIndex += 2;
                         break;
                     case 0xe0:
@@ -251,23 +381,42 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             dataIndex = packet->length;
                             break;
                         }
-                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiPitchWheel", [NSString stringWithFormat:@"%@,0,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1] | (packet->data[dataIndex + 2] << 7)].UTF8String);
+                        if (onMidiPitchWheel) {
+                            onMidiPitchWheel([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1] | (packet->data[dataIndex + 2] << 7));
+                        } else {
+                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiPitchWheel", [NSString stringWithFormat:@"%@,0,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1] | (packet->data[dataIndex + 2] << 7)].UTF8String);
+                        }
                         dataIndex += 3;
                         break;
                     case 0xf0:
                         switch (status) {
                             case 0xf0: {
                                     // start with F0, ends with F7, or stops with > 0x80
+                                    NSMutableArray* sysexArray;
                                     NSMutableString* sysex;
                                     if (sysexMessage[endpointId] == nil) {
-                                        sysex = [[NSMutableString alloc] init];
+                                        if (onMidiSystemExclusive) {
+                                            sysexArray = [[NSMutableArray alloc] init];
+                                        } else {
+                                            sysex = [[NSMutableString alloc] init];
+                                        }
                                         sysexMessage[endpointId] = sysex;
-                                        [sysex appendString: [NSString stringWithFormat:@"%@", endpointId]];
+                                        if (!onMidiSystemExclusive) {
+                                            [sysex appendString: [NSString stringWithFormat:@"%@,0", endpointId]]; // groupId: always 0
+                                        }
                                     } else {
-                                        sysex = sysexMessage[endpointId];
+                                        if (onMidiSystemExclusive) {
+                                            sysexArray = sysexMessage[endpointId];
+                                        } else {
+                                            sysex = sysexMessage[endpointId];
+                                        }
                                     }
-                                    [sysex appendString: @","];
-                                    [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
+                                    if (onMidiSystemExclusive) {
+                                        [sysexArray addObject: [NSNumber numberWithInt:packet->data[dataIndex]]];
+                                    } else {
+                                        [sysex appendString: @","];
+                                        [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
+                                    }
                                     dataIndex++;
                                     // process until end of packet data
                                     for (;dataIndex < packet->length;) {
@@ -276,14 +425,28 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                             [sysexMessage removeObjectForKey: endpointId];
                                             // parse again: don't increment dataIndex
                                             break;
-                                        }
-                                        else {
-                                            NSMutableString* sysex = sysexMessage[endpointId];
-                                            [sysex appendString: @","];
-                                            [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
+                                        } else {
+                                            NSMutableArray* sysexArray;
+                                            NSMutableString* sysex;
+                                            if (onMidiSystemExclusive) {
+                                                sysexArray = sysexMessage[endpointId];
+                                                [sysexArray addObject: [NSNumber numberWithInt:packet->data[dataIndex]]];
+                                            } else {
+                                                sysex = sysexMessage[endpointId];
+                                                [sysex appendString: @","];
+                                                [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
+                                            }
                                             if (packet->data[dataIndex] == 0xF7) {
                                                 // sysex finished
-                                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
+                                                if (onMidiSystemExclusive) {
+                                                    unsigned char* sysexData = unsigned char[[sysexArray count]];
+                                                    for (int i = 0; i < [sysexArray count]; i++) {
+                                                        sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
+                                                    }
+                                                    onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, [sysexArray count]);
+                                                } else {
+                                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
+                                                }
                                                 [sysexMessage removeObjectForKey: endpointId];
                                                 dataIndex++;
                                                 break;
@@ -299,7 +462,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                     dataIndex = packet->length;
                                     break;
                                 }
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiTimeCodeQuarterFrame", [NSString stringWithFormat:@"%@,0,%d", endpointId, packet->data[dataIndex + 1] & 0x7f].UTF8String);
+                                if (onMidiTimeCodeQuarterFrame) {
+                                    onMidiTimeCodeQuarterFrame([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 1] & 0x7f);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiTimeCodeQuarterFrame", [NSString stringWithFormat:@"%@,0,%d", endpointId, packet->data[dataIndex + 1] & 0x7f].UTF8String);
+                                }
                                 dataIndex += 2;
                                 break;
                             case 0xf2:
@@ -308,7 +475,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                     dataIndex = packet->length;
                                     break;
                                 }
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSongPositionPointer", [NSString stringWithFormat:@"%@,0,%d", endpointId, packet->data[dataIndex + 1] | (packet->data[dataIndex + 2] << 7)].UTF8String);
+                                if (onMidiSongPositionPointer) {
+                                    onMidiSongPositionPointer([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 1] | (packet->data[dataIndex + 2] << 7));
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSongPositionPointer", [NSString stringWithFormat:@"%@,0,%d", endpointId, packet->data[dataIndex + 1] | (packet->data[dataIndex + 2] << 7)].UTF8String);
+                                }
                                 dataIndex += 3;
                                 break;
                             case 0xf3:
@@ -317,7 +488,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                     dataIndex = packet->length;
                                     break;
                                 }
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSongSelect", [NSString stringWithFormat:@"%@,0,%d", endpointId, packet->data[dataIndex + 1] & 0x7f].UTF8String);
+                                if (onMidiSongSelect) {
+                                    onMidiSongSelect([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 1] & 0x7f);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSongSelect", [NSString stringWithFormat:@"%@,0,%d", endpointId, packet->data[dataIndex + 1] & 0x7f].UTF8String);
+                                }
                                 dataIndex += 2;
                                 break;
                             case 0xf4:
@@ -329,7 +504,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                 dataIndex++;
                                 break;
                             case 0xf6:
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiTuneRequest", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                if (onMidiTuneRequest) {
+                                    onMidiTuneRequest([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiTuneRequest", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                }
                                 dataIndex++;
                                 break;
                             case 0xf7:
@@ -337,7 +516,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                 dataIndex++;
                                 break;
                             case 0xf8:
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiTimingClock", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                if (onMidiTimingClock) {
+                                    onMidiTimingClock([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiTimingClock", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                }
                                 dataIndex++;
                                 break;
                             case 0xf9:
@@ -345,15 +528,27 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                 dataIndex++;
                                 break;
                             case 0xfa:
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiStart", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                if (onMidiStart) {
+                                    onMidiStart([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiStart", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                }
                                 dataIndex++;
                                 break;
                             case 0xfb:
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiContinue", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                if (onMidiContinue) {
+                                    onMidiContinue([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiContinue", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                }
                                 dataIndex++;
                                 break;
                             case 0xfc:
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiStop", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                if (onMidiStop) {
+                                    onMidiStop([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiStop", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                }
                                 dataIndex++;
                                 break;
                             case 0xfd:
@@ -361,11 +556,19 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                 dataIndex++;
                                 break;
                             case 0xfe:
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiActiveSensing", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                if (onMidiActiveSensing) {
+                                    onMidiActiveSensing([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiActiveSensing", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                }
                                 dataIndex++;
                                 break;
                             case 0xff:
-                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiReset", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                if (onMidiReset) {
+                                    onMidiReset([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0);
+                                } else {
+                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiReset", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
+                                }
                                 dataIndex++;
                                 break;
                         }
