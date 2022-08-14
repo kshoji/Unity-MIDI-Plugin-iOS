@@ -241,7 +241,7 @@ void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
 }
 
 void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) {
-    MidiPlugin *plugin = (__bridge MidiPlugin*)procRef;
+//    MidiPlugin *plugin = (__bridge MidiPlugin*)procRef;
     NSNumber* endpointId = (__bridge NSNumber*)srcRef; // srcRef passed from MIDIPortConnectSource argument
 
     const MIDIPacket *packet = &list->packet[0]; //gets first packet in list
@@ -249,7 +249,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
         for (NSUInteger dataIndex = 0; dataIndex < packet->length;) {
             if (sysexMessage[endpointId] != nil) {
                 // process sysex until end(0xF7)
-                if ((packet->data[dataIndex] & 0x80) == 0x80) {
+                if (packet->data[dataIndex] != 0xF7 && (packet->data[dataIndex] & 0x80) == 0x80) {
                     // sysex interrupted
                     [sysexMessage removeObjectForKey: endpointId];
                     continue;
@@ -271,11 +271,12 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                     if (packet->data[dataIndex] == 0xF7) {
                         // sysex finished
                         if (onMidiSystemExclusive) {
-                            unsigned char* sysexData = unsigned char[[sysexArray count]];
+                            unsigned char* sysexData = new unsigned char[[sysexArray count]];
                             for (int i = 0; i < [sysexArray count]; i++) {
                                 sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
                             }
-                            onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, [sysexArray count]);
+                            onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, (int)[sysexArray count]);
+                            delete[] sysexData;
                         } else {
                             UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
                         }
@@ -397,10 +398,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                     if (sysexMessage[endpointId] == nil) {
                                         if (onMidiSystemExclusive) {
                                             sysexArray = [[NSMutableArray alloc] init];
+                                            sysexMessage[endpointId] = sysexArray;
                                         } else {
                                             sysex = [[NSMutableString alloc] init];
+                                            sysexMessage[endpointId] = sysex;
                                         }
-                                        sysexMessage[endpointId] = sysex;
                                         if (!onMidiSystemExclusive) {
                                             [sysex appendString: [NSString stringWithFormat:@"%@,0", endpointId]]; // groupId: always 0
                                         }
@@ -411,6 +413,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                             sysex = sysexMessage[endpointId];
                                         }
                                     }
+                                    // add F0
                                     if (onMidiSystemExclusive) {
                                         [sysexArray addObject: [NSNumber numberWithInt:packet->data[dataIndex]]];
                                     } else {
@@ -426,34 +429,58 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                             // parse again: don't increment dataIndex
                                             break;
                                         } else {
-                                            NSMutableArray* sysexArray;
-                                            NSMutableString* sysex;
                                             if (onMidiSystemExclusive) {
-                                                sysexArray = sysexMessage[endpointId];
                                                 [sysexArray addObject: [NSNumber numberWithInt:packet->data[dataIndex]]];
                                             } else {
-                                                sysex = sysexMessage[endpointId];
                                                 [sysex appendString: @","];
                                                 [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
-                                            }
-                                            if (packet->data[dataIndex] == 0xF7) {
-                                                // sysex finished
-                                                if (onMidiSystemExclusive) {
-                                                    unsigned char* sysexData = unsigned char[[sysexArray count]];
-                                                    for (int i = 0; i < [sysexArray count]; i++) {
-                                                        sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
-                                                    }
-                                                    onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, [sysexArray count]);
-                                                } else {
-                                                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
-                                                }
-                                                [sysexMessage removeObjectForKey: endpointId];
-                                                dataIndex++;
-                                                break;
                                             }
                                         }
                                         dataIndex++;
                                     }
+                                }
+                                break;
+                            case 0xf7: {
+                                    NSMutableArray* sysexArray;
+                                    NSMutableString* sysex;
+                                    if (sysexMessage[endpointId] == nil) {
+                                        if (onMidiSystemExclusive) {
+                                            sysexArray = [[NSMutableArray alloc] init];
+                                            sysexMessage[endpointId] = sysexArray;
+                                        } else {
+                                            sysex = [[NSMutableString alloc] init];
+                                            sysexMessage[endpointId] = sysex;
+                                        }
+                                        if (!onMidiSystemExclusive) {
+                                            [sysex appendString: [NSString stringWithFormat:@"%@,0", endpointId]]; // groupId: always 0
+                                        }
+                                    } else {
+                                        if (onMidiSystemExclusive) {
+                                            sysexArray = sysexMessage[endpointId];
+                                        } else {
+                                            sysex = sysexMessage[endpointId];
+                                        }
+                                    }
+                                    // add F7
+                                    if (onMidiSystemExclusive) {
+                                        [sysexArray addObject: [NSNumber numberWithInt:packet->data[dataIndex]]];
+                                    } else {
+                                        [sysex appendString: @","];
+                                        [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
+                                    }
+                                    dataIndex++;
+                                    // sysex finished
+                                    if (onMidiSystemExclusive) {
+                                        unsigned char* sysexData = new unsigned char[[sysexArray count]];
+                                        for (int i = 0; i < [sysexArray count]; i++) {
+                                            sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
+                                        }
+                                        onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, (int)[sysexArray count]);
+                                         delete[] sysexData;
+                                    } else {
+                                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
+                                    }
+                                    [sysexMessage removeObjectForKey: endpointId];
                                 }
                                 break;
                             case 0xf1:
@@ -509,10 +536,6 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                 } else {
                                     UnitySendMessage(GAME_OBJECT_NAME, "OnMidiTuneRequest", [NSString stringWithFormat:@"%@,0", endpointId].UTF8String);
                                 }
-                                dataIndex++;
-                                break;
-                            case 0xf7:
-                                // sysex end: don't come with single data, ignored
                                 dataIndex++;
                                 break;
                             case 0xf8:
