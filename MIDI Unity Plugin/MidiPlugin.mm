@@ -5,8 +5,8 @@
 
 #import "MidiPlugin.h"
 
-typedef int ( __stdcall *OnMidiNoteOnDelegate )( const char*, int, int, int, int );
-typedef int ( __stdcall *OnMidiNoteOffDelegate )( const char*, int, int, int, int );
+typedef int ( __cdecl *OnMidiNoteOnDelegate )( const char*, int, int, int, int );
+typedef int ( __cdecl *OnMidiNoteOffDelegate )( const char*, int, int, int, int );
 
 #ifdef __cplusplus
 extern "C" {
@@ -181,8 +181,8 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             dataIndex = packet->length;
                             break;
                         }
-                        if (plugin.onMidiNoteOff) {
-                            [plugin onMidiNoteOff([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2])];
+                        if (onMidiNoteOff) {
+                            onMidiNoteOff([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]);
                         } else {
                             UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOff", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
                         }
@@ -195,14 +195,14 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             break;
                         }
                         if (packet->data[dataIndex + 2] == 0) {
-                            if (plugin.onMidiNoteOff) {
-                                [plugin onMidiNoteOff([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2])];
+                            if (onMidiNoteOff) {
+                                onMidiNoteOff([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]);
                             } else {
                                 UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOff", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
                             }
                         } else {
-                            if (plugin.onMidiNoteOn) {
-                                [plugin onMidiNoteOn([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2])];
+                            if (onMidiNoteOn) {
+                                onMidiNoteOn([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]);
                             } else {
                                 UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOn", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
                             }

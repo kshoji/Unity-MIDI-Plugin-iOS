@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7261B5EC268B3B5700813B60 /* MIdiPlugin.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7261B5EB268B3B5700813B60 /* MIdiPlugin.mm */; };
-		7261B5ED268B3B5700813B60 /* MIdiPlugin.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 7261B5EA268B3B5700813B60 /* MIdiPlugin.h */; };
+		7261B5EC268B3B5700813B60 /* MidiPlugin.mm in Sources */ = {isa = PBXBuildFile; fileRef = 7261B5EB268B3B5700813B60 /* MidiPlugin.mm */; };
+		7261B5ED268B3B5700813B60 /* MidiPlugin.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 7261B5EA268B3B5700813B60 /* MidiPlugin.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -18,7 +18,7 @@
 			dstPath = "include/$(PRODUCT_NAME)";
 			dstSubfolderSpec = 16;
 			files = (
-				7261B5ED268B3B5700813B60 /* MIdiPlugin.h in CopyFiles */,
+				7261B5ED268B3B5700813B60 /* MidiPlugin.h in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -26,8 +26,8 @@
 
 /* Begin PBXFileReference section */
 		7261B5E7268B3B5700813B60 /* libMIDIPlugin.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libMIDIPlugin.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		7261B5EA268B3B5700813B60 /* MIdiPlugin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MIdiPlugin.h; sourceTree = "<group>"; };
-		7261B5EB268B3B5700813B60 /* MIdiPlugin.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MIdiPlugin.mm; sourceTree = "<group>"; };
+		7261B5EA268B3B5700813B60 /* MidiPlugin.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MidiPlugin.h; sourceTree = "<group>"; };
+		7261B5EB268B3B5700813B60 /* MidiPlugin.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MidiPlugin.mm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,8 +60,8 @@
 		7261B5E9268B3B5700813B60 /* MIDI Unity Plugin */ = {
 			isa = PBXGroup;
 			children = (
-				7261B5EA268B3B5700813B60 /* MIdiPlugin.h */,
-				7261B5EB268B3B5700813B60 /* MIdiPlugin.mm */,
+				7261B5EA268B3B5700813B60 /* MidiPlugin.h */,
+				7261B5EB268B3B5700813B60 /* MidiPlugin.mm */,
 			);
 			path = "MIDI Unity Plugin";
 			sourceTree = "<group>";
@@ -122,7 +122,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7261B5EC268B3B5700813B60 /* MIdiPlugin.mm in Sources */,
+				7261B5EC268B3B5700813B60 /* MidiPlugin.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
