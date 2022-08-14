@@ -5,6 +5,9 @@
 
 #import "MidiPlugin.h"
 
+typedef int ( __stdcall *OnMidiNoteOnDelegate )( const char*, int, int, int, int );
+typedef int ( __stdcall *OnMidiNoteOffDelegate )( const char*, int, int, int, int );
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -14,8 +17,10 @@ extern "C" {
     void startScanBluetoothMidiDevices();
     void stopScanBluetoothMidiDevices();
     const char* getDeviceName(const char* deviceId);
+    void SetMidiNoteOnCallback(OnMidiNoteOnDelegate callback);
+    void SetMidiNoteOffCallback(OnMidiNoteOffDelegate callback);
 
-    extern UIViewController*        UnityGetGLViewController();
+    extern UIViewController* UnityGetGLViewController();
     extern void UnitySendMessage(const char* obj, const char* method, const char* msg);
 #ifdef __cplusplus
 }
@@ -34,6 +39,9 @@ NSMutableDictionary *sysexMessage;
 NSMutableDictionary *packetLists;
 NSMutableDictionary *deviceNames;
 UINavigationController *navigationController;
+
+OnMidiNoteOnDelegate onMidiNoteOn;
+OnMidiNoteOffDelegate onMidiNoteOff;
 
 void midiPluginInitialize() {
     if (instance == nil) {
@@ -92,6 +100,13 @@ const char* getDeviceName(const char* deviceId) {
     return strdup(((NSString *)deviceNames[deviceNumber]).UTF8String);
 }
 
+void SetMidiNoteOnCallback(OnMidiNoteOnDelegate callback) {
+    onMidiNoteOn = callback;
+}
+void SetMidiNoteOffCallback(OnMidiNoteOffDelegate callback) {
+    onMidiNoteOff = callback;
+}
+
 void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
     ItemCount numOfDevices = MIDIGetNumberOfDevices();
     for (int i = 0; i < numOfDevices; i++) {
@@ -130,7 +145,7 @@ void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
 }
 
 void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) {
-//    MidiPlugin *plugin = (__bridge MidiPlugin*)procRef;
+    MidiPlugin *plugin = (__bridge MidiPlugin*)procRef;
     NSNumber* endpointId = (__bridge NSNumber*)srcRef; // srcRef passed from MIDIPortConnectSource argument
 
     const MIDIPacket *packet = &list->packet[0]; //gets first packet in list
@@ -166,7 +181,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             dataIndex = packet->length;
                             break;
                         }
-                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOff", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                        if (plugin.onMidiNoteOff) {
+                            [plugin onMidiNoteOff([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2])];
+                        } else {
+                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOff", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                        }
                         dataIndex += 3;
                         break;
                     case 0x90:
@@ -176,9 +195,17 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                             break;
                         }
                         if (packet->data[dataIndex + 2] == 0) {
-                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOff", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                            if (plugin.onMidiNoteOff) {
+                                [plugin onMidiNoteOff([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2])];
+                            } else {
+                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOff", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                            }
                         } else {
-                            UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOn", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                            if (plugin.onMidiNoteOn) {
+                                [plugin onMidiNoteOn([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2])];
+                            } else {
+                                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiNoteOn", [NSString stringWithFormat:@"%@,0,%d,%d,%d", endpointId, packet->data[dataIndex + 0] & 0x0f, packet->data[dataIndex + 1], packet->data[dataIndex + 2]].UTF8String);
+                            }
                         }
                         dataIndex += 3;
                         break;
