@@ -5,6 +5,11 @@
 
 #import "MidiPlugin.h"
 
+typedef void ( __cdecl *OnMidiInputDeviceAttachedDelegate )( const char* );
+typedef void ( __cdecl *OnMidiOutputDeviceAttachedDelegate )( const char* );
+typedef void ( __cdecl *OnMidiInputDeviceDetachedDelegate )( const char* );
+typedef void ( __cdecl *OnMidiOutputDeviceDetachedDelegate )( const char* );
+
 typedef void ( __cdecl *OnMidiNoteOnDelegate )( const char*, int, int, int, int );
 typedef void ( __cdecl *OnMidiNoteOffDelegate )( const char*, int, int, int, int );
 typedef void ( __cdecl *OnMidiPolyphonicAftertouchDelegate )( const char*, int , int , int , int );
@@ -29,6 +34,12 @@ extern "C" {
 #endif
     void midiPluginInitialize();
     void midiPluginTerminate();
+
+    void SetMidiInputDeviceAttachedCallback(OnMidiInputDeviceAttachedDelegate callback);
+    void SetMidiOutputDeviceAttachedCallback(OnMidiOutputDeviceAttachedDelegate callback);
+    void SetMidiInputDeviceDetachedCallback(OnMidiInputDeviceDetachedDelegate callback);
+    void SetMidiOutputDeviceDetachedCallback(OnMidiOutputDeviceDetachedDelegate callback);
+
     void sendMidiData(const char* deviceId, unsigned char* byteArray, int length);
     void startScanBluetoothMidiDevices();
     void stopScanBluetoothMidiDevices();
@@ -72,6 +83,13 @@ NSMutableDictionary *packetLists;
 NSMutableDictionary *deviceNames;
 UINavigationController *navigationController;
 
+NSTimer *deviceUpdateTimer;
+
+OnMidiInputDeviceAttachedDelegate onMidiInputDeviceAttached;
+OnMidiOutputDeviceAttachedDelegate onMidiOutputDeviceAttached;
+OnMidiInputDeviceDetachedDelegate onMidiInputDeviceDetached;
+OnMidiOutputDeviceDetachedDelegate onMidiOutputDeviceDetached;
+
 OnMidiNoteOnDelegate onMidiNoteOn;
 OnMidiNoteOffDelegate onMidiNoteOff;
 OnMidiPolyphonicAftertouchDelegate onMidiPolyphonicAftertouch;
@@ -95,6 +113,9 @@ void midiPluginInitialize() {
     if (instance == nil) {
         instance = [[MidiPlugin alloc] init];
     }
+
+    deviceUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:instance selector:@selector(getMidiDevices) userInfo:nil repeats:YES];
+    [deviceUpdateTimer fire];
 
     // network session
     MIDINetworkSession* session = [MIDINetworkSession defaultSession];
@@ -129,6 +150,8 @@ void stopScanBluetoothMidiDevices() {
 }
 
 void midiPluginTerminate() {
+    [deviceUpdateTimer invalidate];
+
     NSUInteger sourceCount = MIDIGetNumberOfSources();
     for (NSUInteger i = 0; i < sourceCount; ++i) {
         MIDIEndpointRef endpoint = MIDIGetSource(i);
@@ -142,10 +165,28 @@ void midiPluginTerminate() {
 
 const char* getDeviceName(const char* deviceId) {
     NSNumber* deviceNumber = [NSNumber numberWithInteger: [[NSString stringWithUTF8String: deviceId] intValue]];
-    if (deviceNumber == nil || deviceNames[deviceNumber] == nil) {
+    if (deviceNumber == nil) {
         return NULL;
     }
-    return strdup(((NSString *)deviceNames[deviceNumber]).UTF8String);
+    for (id key in deviceNames) {
+        if (deviceNumber.intValue == ((NSNumber*)key).intValue) {
+            return strdup(((NSString *)deviceNames[key]).UTF8String);
+        }
+    }
+    return NULL;
+}
+
+void SetMidiInputDeviceAttachedCallback(OnMidiInputDeviceAttachedDelegate callback) {
+    onMidiInputDeviceAttached = callback;
+}
+void SetMidiOutputDeviceAttachedCallback(OnMidiOutputDeviceAttachedDelegate callback) {
+    onMidiOutputDeviceAttached = callback;
+}
+void SetMidiInputDeviceDetachedCallback(OnMidiInputDeviceDetachedDelegate callback) {
+    onMidiInputDeviceDetached = callback;
+}
+void SetMidiOutputDeviceDetachedCallback(OnMidiOutputDeviceDetachedDelegate callback) {
+    onMidiOutputDeviceDetached = callback;
 }
 
 void SetMidiNoteOnCallback(OnMidiNoteOnDelegate callback) {
@@ -607,67 +648,110 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
 }
 
 - (void) getMidiDevices {
-    ItemCount numOfDevices = MIDIGetNumberOfDevices();
-    for (int i = 0; i < numOfDevices; i++) {
-        MIDIDeviceRef midiDevice = MIDIGetDevice(i);
+    NSDictionary* previousDeviceNames = [deviceNames copy];
+    [deviceNames removeAllObjects];
 
-        CFStringRef deviceName; 
-        MIDIObjectGetStringProperty(midiDevice, kMIDIPropertyName, &deviceName);
+    // source
+    ItemCount numOfSources = MIDIGetNumberOfSources();
+    for (int k = 0; k < numOfSources; k++) {
+        MIDIEndpointRef endpoint = MIDIGetSource(k);
 
-        int deviceUniqueId;
-        MIDIObjectGetIntegerProperty(midiDevice, kMIDIPropertyUniqueID, &deviceUniqueId);
-        NSNumber* deviceNumber = [NSNumber numberWithInt:deviceUniqueId];
+        int endpointUniqueId;
+        MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
+        NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
 
-        if (deviceNames[deviceNumber] == nil) {
-            deviceNames[deviceNumber] = (__bridge NSString *)deviceName;
+        CFStringRef deviceName;
+        MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &deviceName);
+        deviceNames[endpointNumber] = (__bridge NSString *)deviceName;
+
+        if (![sourceSet member: endpointNumber]) {
+            OSStatus err;
+            err = MIDIPortConnectSource(inputPort, endpoint, (__bridge void*)endpointNumber);
+            if (err == noErr) {
+                [sourceSet addObject: endpointNumber];
+
+                BOOL hasKey = NO;
+                for (id key in previousDeviceNames) {
+                    if (endpointUniqueId == ((NSNumber*)key).intValue) {
+                        hasKey = YES;
+                        break;
+                    }
+                }
+                if (!hasKey) {
+                    if (onMidiInputDeviceAttached) {
+                        onMidiInputDeviceAttached([NSString stringWithFormat:@"%@", endpointNumber].UTF8String);
+                    } else {
+                        UnitySendMessage(GAME_OBJECT_NAME, "OnMidiInputDeviceAttached", [NSString stringWithFormat:@"%@", endpointNumber].UTF8String);
+                    }
+                }
+            }
+        }
+    }
+
+    // destination
+    ItemCount numOfDestinations = MIDIGetNumberOfDestinations();
+    for (int k = 0; k < numOfDestinations; k++) {
+        MIDIEndpointRef endpoint = MIDIGetDestination(k);
+
+        int endpointUniqueId;
+        MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
+        NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
+
+        CFStringRef deviceName;
+        MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &deviceName);
+        deviceNames[endpointNumber] = (__bridge NSString *)deviceName;
+
+        if (![destinationSet member: endpointNumber]) {
+            [destinationSet addObject: endpointNumber];
+
+            if (packetLists[endpointNumber] == nil) {
+                Byte *packetBuffer = new Byte[1024];
+                MIDIPacketList *packetListPtr = (MIDIPacketList *)packetBuffer;
+                packetLists[endpointNumber] = [NSNumber numberWithLong:(long)packetListPtr];
+            }
+
+            BOOL hasKey = NO;
+            for (id key in previousDeviceNames) {
+                if (endpointUniqueId == ((NSNumber*)key).intValue) {
+                    hasKey = YES;
+                    break;
+                }
+            }
+            if (!hasKey) {
+                if (onMidiOutputDeviceAttached) {
+                    onMidiOutputDeviceAttached([NSString stringWithFormat:@"%@", endpointNumber].UTF8String);
+                } else {
+                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiOutputDeviceAttached", [NSString stringWithFormat:@"%@", endpointNumber].UTF8String);
+                }
+            }
+        }
+    }
+
+    for (id key in previousDeviceNames) {
+        BOOL hasKey = NO;
+        for (id key2 in deviceNames) {
+            if (((NSNumber*)key).intValue == ((NSNumber*)key2).intValue) {
+                hasKey = YES;
+                break;
+            }
         }
 
-        ItemCount numOfEntities = MIDIDeviceGetNumberOfEntities(midiDevice);
-        for (int j = 0; j < numOfEntities; j++) {
-            MIDIEntityRef midiEntity = MIDIDeviceGetEntity(midiDevice, j);
-
-            // source
-            ItemCount numOfSources = MIDIEntityGetNumberOfSources(midiEntity);
-            for (int k = 0; k < numOfSources; k++) {
-                MIDIEndpointRef endpoint = MIDIEntityGetSource(midiEntity, k);
-
-                int endpointUniqueId;
-                MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
-                NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
-                if (![sourceSet member: endpointNumber]) {
-                    OSStatus err;
-                    err = MIDIPortConnectSource(inputPort, endpoint, (__bridge void*)endpointNumber);
-                    if (err == noErr) {
-                        [sourceSet addObject: endpointNumber];
-
-                    }
+        if (!hasKey) {
+            if ([sourceSet member: key]) {
+                [sourceSet removeObject: key];
+                if (onMidiInputDeviceDetached) {
+                    onMidiInputDeviceDetached([NSString stringWithFormat:@"%@", key].UTF8String);
+                } else {
+                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiInputDeviceDetached", [NSString stringWithFormat:@"%@", key].UTF8String);
                 }
             }
-            if (numOfSources > 0) {
-                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiInputDeviceAttached", [NSString stringWithFormat:@"%@", deviceNumber].UTF8String);
-            }
-
-            // destination
-            ItemCount numOfDestinations = MIDIEntityGetNumberOfDestinations(midiEntity);
-            for (int k = 0; k < numOfDestinations; k++) {
-                MIDIEndpointRef endpoint = MIDIEntityGetDestination(midiEntity, k);
-
-                int endpointUniqueId;
-                MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
-                NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
-                if (![destinationSet member: endpointNumber]) {
-                    [destinationSet addObject: endpointNumber];
-
-                    if (packetLists[endpointNumber] == nil) {
-                        Byte *packetBuffer = new Byte[1024];
-                        MIDIPacketList *packetListPtr = (MIDIPacketList *)packetBuffer;
-                        packetLists[endpointNumber] = [NSNumber numberWithLong:(long)packetListPtr];
-                    }
-
+            if ([destinationSet member: key]) {
+                [destinationSet removeObject: key];
+                if (onMidiOutputDeviceDetached) {
+                    onMidiOutputDeviceDetached([NSString stringWithFormat:@"%@", key].UTF8String);
+                } else {
+                    UnitySendMessage(GAME_OBJECT_NAME, "OnMidiOutputDeviceDetached", [NSString stringWithFormat:@"%@", key].UTF8String);
                 }
-            }
-            if (numOfDestinations > 0) {
-                UnitySendMessage(GAME_OBJECT_NAME, "OnMidiOutputDeviceAttached", [NSString stringWithFormat:@"%@", deviceNumber].UTF8String);
             }
         }
     }
