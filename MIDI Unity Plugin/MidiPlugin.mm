@@ -253,8 +253,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                     // sysex interrupted
                     [sysexMessage removeObjectForKey: endpointId];
                     continue;
-                }
-                else {
+                } else {
                     NSMutableArray* sysexArray;
                     NSMutableString* sysex;
                     if (onMidiSystemExclusive) {
@@ -421,23 +420,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                         [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
                                     }
                                     dataIndex++;
-                                    // process until end of packet data
-                                    for (;dataIndex < packet->length;) {
-                                        if ((packet->data[dataIndex] & 0x80) == 0x80) {
-                                            // sysex interrupted
-                                            [sysexMessage removeObjectForKey: endpointId];
-                                            // parse again: don't increment dataIndex
-                                            break;
-                                        } else {
-                                            if (onMidiSystemExclusive) {
-                                                [sysexArray addObject: [NSNumber numberWithInt:packet->data[dataIndex]]];
-                                            } else {
-                                                [sysex appendString: @","];
-                                                [sysex appendString: [NSString stringWithFormat:@"%d", packet->data[dataIndex]]];
-                                            }
-                                        }
-                                        dataIndex++;
-                                    }
+                                    continue;
                                 }
                                 break;
                             case 0xf7: {
