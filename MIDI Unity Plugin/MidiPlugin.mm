@@ -161,6 +161,7 @@ void midiPluginTerminate() {
     MIDIPortDispose(inputPort);
     MIDIPortDispose(outputPort);
     MIDIClientDispose(midiClient);
+    instance = nil;
 }
 
 const char* getDeviceName(const char* deviceId) {
