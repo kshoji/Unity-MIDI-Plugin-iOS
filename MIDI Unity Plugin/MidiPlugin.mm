@@ -133,6 +133,9 @@ void startScanBluetoothMidiDevices() {
     CABTMIDICentralViewController* centralViewController = [[CABTMIDICentralViewController alloc] init];
     navigationController = [[UINavigationController alloc] initWithRootViewController: centralViewController];
     navigationController.modalPresentationStyle = UIModalPresentationPopover;
+    UIViewController* unityViewController = UnityGetGLViewController();
+    navigationController.popoverPresentationController.sourceView = unityViewController.view;
+    navigationController.popoverPresentationController.sourceRect = CGRectMake(unityViewController.view.bounds.size.width / 2.0, unityViewController.view.bounds.size.height, 0.0, 0.0);
     [UnityGetGLViewController() presentViewController:navigationController animated:YES completion:^{
         [instance getMidiDevices];
     }];
