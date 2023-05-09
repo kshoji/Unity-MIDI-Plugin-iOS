@@ -253,23 +253,19 @@ void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
     for (int i = 0; i < numOfDevices; i++) {
         MIDIDeviceRef midiDevice = MIDIGetDevice(i);
 
-        int deviceUniqueId;
-        MIDIObjectGetIntegerProperty(midiDevice, kMIDIPropertyUniqueID, &deviceUniqueId);
-        NSNumber* deviceNumber = [NSNumber numberWithInt:deviceUniqueId];
+        ItemCount numOfEntities = MIDIDeviceGetNumberOfEntities(midiDevice);
+        for (ItemCount j = 0; j < numOfEntities; j++) {
+            MIDIEntityRef midiEntity = MIDIDeviceGetEntity(midiDevice, j);
+            ItemCount numOfDestinations = MIDIEntityGetNumberOfDestinations(midiEntity);
+            for (ItemCount k = 0; k < numOfDestinations; k++) {
+                MIDIEndpointRef endpoint = MIDIEntityGetDestination(midiEntity, k);
 
-        if ([[NSString stringWithFormat:@"%@", deviceNumber] isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
-            // send to all destinations
-            ItemCount numOfEntities = MIDIDeviceGetNumberOfEntities(midiDevice);
-            for (int j = 0; j < numOfEntities; j++) {
-                MIDIEntityRef midiEntity = MIDIDeviceGetEntity(midiDevice, j);
-                ItemCount numOfDestinations = MIDIEntityGetNumberOfDestinations(midiEntity);
-                for (int k = 0; k < numOfDestinations; k++) {
-                    MIDIEndpointRef endpoint = MIDIEntityGetDestination(midiEntity, k);
+                int endpointUniqueId;
+                MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
+                NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
 
-                    int endpointUniqueId;
-                    MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
-                    NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
-
+                // send to all matched destinations
+                if ([[NSString stringWithFormat:@"%@", endpointNumber] isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
                     MIDIPacketList *packetListPtr = (MIDIPacketList *)((NSNumber *)packetLists[endpointNumber]).longValue;
                     if (packetListPtr) {
                         MIDIPacket *packet = MIDIPacketListInit(packetListPtr);
@@ -280,7 +276,6 @@ void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
                     }
                 }
             }
-            break;
         }
     }
 }
