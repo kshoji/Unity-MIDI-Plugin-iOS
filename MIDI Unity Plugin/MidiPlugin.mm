@@ -124,6 +124,12 @@ void midiPluginInitialize() {
     [[NSNotificationCenter defaultCenter] addObserver:instance selector:@selector(getMidiDevices) name:MIDINetworkNotificationContactsDidChange object:nil];
 }
 
+#if !TARGET_IPHONE_SIMULATOR
+- (void)closeBluetoothMidiDevices:(id)sender {
+    [navigationController dismissViewControllerAnimated:YES completion:nil];
+}
+#endif
+
 void startScanBluetoothMidiDevices() {
 #if !TARGET_IPHONE_SIMULATOR
     if (navigationController.presentingViewController != nil) {
@@ -136,6 +142,11 @@ void startScanBluetoothMidiDevices() {
     UIViewController* unityViewController = UnityGetGLViewController();
     navigationController.popoverPresentationController.sourceView = unityViewController.view;
     navigationController.popoverPresentationController.sourceRect = CGRectMake(unityViewController.view.bounds.size.width / 2.0, unityViewController.view.bounds.size.height, 0.0, 0.0);
+
+    // Add 'done' button to the navigation bar
+    // https://developer.apple.com/forums/thread/31822?answerId=195499022#195499022
+    centralViewController.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:instance action:@selector(closeBluetoothMidiDevices:)];
+
     [UnityGetGLViewController() presentViewController:navigationController animated:YES completion:^{
         [instance getMidiDevices];
     }];
