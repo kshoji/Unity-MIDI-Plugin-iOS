@@ -44,6 +44,8 @@ extern "C" {
     void startScanBluetoothMidiDevices();
     void stopScanBluetoothMidiDevices();
     const char* getDeviceName(const char* deviceId);
+    const char* getVendorId(const char* deviceId);
+    const char* getProductId(const char* deviceId);
     void SetMidiNoteOnCallback(OnMidiNoteOnDelegate callback);
     void SetMidiNoteOffCallback(OnMidiNoteOffDelegate callback);
     void SetMidiPolyphonicAftertouchDelegate(OnMidiPolyphonicAftertouchDelegate callback);
@@ -81,6 +83,8 @@ NSHashTable *destinationSet;
 NSMutableDictionary *sysexMessage;
 NSMutableDictionary *packetLists;
 NSMutableDictionary *deviceNames;
+NSMutableDictionary *vendorNames;
+NSMutableDictionary *productNames;
 UINavigationController *navigationController;
 
 NSTimer *deviceUpdateTimer;
@@ -186,6 +190,32 @@ const char* getDeviceName(const char* deviceId) {
     for (id key in deviceNames) {
         if (deviceNumber.intValue == ((NSNumber*)key).intValue) {
             return strdup(((NSString *)deviceNames[key]).UTF8String);
+        }
+    }
+    return NULL;
+}
+
+const char* getVendorId(const char* deviceId) {
+    NSNumber* deviceNumber = [NSNumber numberWithInteger: [[NSString stringWithUTF8String: deviceId] intValue]];
+    if (deviceNumber == nil) {
+        return NULL;
+    }
+    for (id key in vendorNames) {
+        if (deviceNumber.intValue == ((NSNumber*)key).intValue) {
+            return strdup(((NSString *)vendorNames[key]).UTF8String);
+        }
+    }
+    return NULL;
+}
+
+const char* getProductId(const char* deviceId) {
+    NSNumber* deviceNumber = [NSNumber numberWithInteger: [[NSString stringWithUTF8String: deviceId] intValue]];
+    if (deviceNumber == nil) {
+        return NULL;
+    }
+    for (id key in productNames) {
+        if (deviceNumber.intValue == ((NSNumber*)key).intValue) {
+            return strdup(((NSString *)productNames[key]).UTF8String);
         }
     }
     return NULL;
@@ -648,6 +678,8 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
         sysexMessage = [[NSMutableDictionary alloc] init];
         packetLists = [[NSMutableDictionary alloc] init];
         deviceNames = [[NSMutableDictionary alloc] init];
+        vendorNames = [[NSMutableDictionary alloc] init];
+        productNames = [[NSMutableDictionary alloc] init];
 
         MIDIClientCreate(CFSTR("MidiPlugin"), NULL, NULL, &midiClient);
         MIDIInputPortCreate(midiClient, CFSTR("Input"), midiInputCallback, (__bridge_retained void *)self, &inputPort);
@@ -673,6 +705,14 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
         CFStringRef deviceName;
         MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &deviceName);
         deviceNames[endpointNumber] = (__bridge NSString *)deviceName;
+
+        CFStringRef vendorName;
+        MIDIObjectGetStringProperty(endpoint, kMIDIPropertyManufacturer, &vendorName);
+        vendorNames[endpointNumber] = (__bridge NSString *)vendorName;
+
+        CFStringRef productName;
+        MIDIObjectGetStringProperty(endpoint, kMIDIPropertyModel, &productName);
+        productNames[endpointNumber] = (__bridge NSString *)productName;
 
         if (![sourceSet member: endpointNumber]) {
             OSStatus err;
@@ -710,6 +750,14 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
         CFStringRef deviceName;
         MIDIObjectGetStringProperty(endpoint, kMIDIPropertyName, &deviceName);
         deviceNames[endpointNumber] = (__bridge NSString *)deviceName;
+
+        CFStringRef vendorName;
+        MIDIObjectGetStringProperty(endpoint, kMIDIPropertyManufacturer, &vendorName);
+        vendorNames[endpointNumber] = (__bridge NSString *)vendorName;
+
+        CFStringRef productName;
+        MIDIObjectGetStringProperty(endpoint, kMIDIPropertyModel, &productName);
+        productNames[endpointNumber] = (__bridge NSString *)productName;
 
         if (![destinationSet member: endpointNumber]) {
             [destinationSet addObject: endpointNumber];
