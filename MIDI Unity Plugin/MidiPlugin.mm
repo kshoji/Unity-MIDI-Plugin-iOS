@@ -291,32 +291,61 @@ void SetMidiResetDelegate(OnMidiResetDelegate callback) {
 
 void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
     ItemCount numOfDevices = MIDIGetNumberOfDevices();
-    for (int i = 0; i < numOfDevices; i++) {
-        MIDIDeviceRef midiDevice = MIDIGetDevice(i);
+    BOOL deviceFound = NO;
 
+    // First, try to find and send to the device through entities (for physical devices)
+    for (ItemCount i = 0; i < numOfDevices && !deviceFound; i++) {
+        MIDIDeviceRef midiDevice = MIDIGetDevice(i);
         ItemCount numOfEntities = MIDIDeviceGetNumberOfEntities(midiDevice);
+        
         for (ItemCount j = 0; j < numOfEntities; j++) {
             MIDIEntityRef midiEntity = MIDIDeviceGetEntity(midiDevice, j);
             ItemCount numOfDestinations = MIDIEntityGetNumberOfDestinations(midiEntity);
+            
             for (ItemCount k = 0; k < numOfDestinations; k++) {
                 MIDIEndpointRef endpoint = MIDIEntityGetDestination(midiEntity, k);
-
-                int endpointUniqueId;
+                
+                SInt32 endpointUniqueId;
                 MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
-                NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
-
-                // send to all matched destinations
-                if ([[NSString stringWithFormat:@"%@", endpointNumber] isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
-                    MIDIPacketList *packetListPtr = (MIDIPacketList *)((NSNumber *)packetLists[endpointNumber]).longValue;
-                    if (packetListPtr) {
-                        MIDIPacket *packet = MIDIPacketListInit(packetListPtr);
-                        packet = MIDIPacketListAdd(packetListPtr, 1024, packet, mach_absolute_time(), length, byteArray);
-
-                        OSStatus err;
-                        err = MIDISend(outputPort, endpoint, packetListPtr);
-                    }
+                NSString* endpointUniqueIdStr = [NSString stringWithFormat:@"%d", endpointUniqueId];
+                
+                if ([endpointUniqueIdStr isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
+                    deviceFound = YES;
+                    sendMidiPacketToDevice(endpoint, byteArray, length);
+                    break;
                 }
             }
+        }
+    }
+
+    // If the device wasn't found and it might be a virtual device, check destinations directly
+    if (!deviceFound) {
+        ItemCount numOfDestinations = MIDIGetNumberOfDestinations();
+        for (ItemCount i = 0; i < numOfDestinations; i++) {
+            MIDIEndpointRef endpoint = MIDIGetDestination(i);
+            
+            SInt32 endpointUniqueId;
+            MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
+            NSString* endpointUniqueIdStr = [NSString stringWithFormat:@"%d", endpointUniqueId];
+            
+            if ([endpointUniqueIdStr isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
+                sendMidiPacketToDevice(endpoint, byteArray, length);
+                break;
+            }
+        }
+    }
+}
+
+void sendMidiPacketToDevice(MIDIEndpointRef endpoint, unsigned char* byteArray, int length) {
+    MIDIPacketList packetList;
+    MIDIPacket* packet = MIDIPacketListInit(&packetList);
+    packet = MIDIPacketListAdd(&packetList, sizeof(packetList), packet, mach_absolute_time(), length, byteArray);
+    
+    if (packet) {
+        OSStatus err = MIDISend(outputPort, endpoint, &packetList);
+        if (err != noErr) {
+            // Handle the error
+            NSLog(@"Error sending MIDI data: %d", (int)err);
         }
     }
 }
@@ -352,7 +381,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                         // sysex finished
                         if (onMidiSystemExclusive) {
                             unsigned char* sysexData = new unsigned char[[sysexArray count]];
-                            for (int i = 0; i < [sysexArray count]; i++) {
+                            for (NSUInteger i = 0; i < [sysexArray count]; i++) {
                                 sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
                             }
                             onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, (int)[sysexArray count]);
@@ -368,7 +397,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                 dataIndex++;
             } else {
                 // process channel messages
-                int status = packet->data[dataIndex];
+                Byte status = packet->data[dataIndex];
                 switch (status & 0xf0) {
                     case 0x80:
                         if (dataIndex + 2 >= packet->length) {
@@ -536,11 +565,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                     // sysex finished
                                     if (onMidiSystemExclusive) {
                                         unsigned char* sysexData = new unsigned char[[sysexArray count]];
-                                        for (int i = 0; i < [sysexArray count]; i++) {
+                                        for (NSUInteger i = 0; i < [sysexArray count]; i++) {
                                             sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
                                         }
                                         onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, (int)[sysexArray count]);
-                                         delete[] sysexData;
+                                        delete[] sysexData;
                                     } else {
                                         UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
                                     }
@@ -695,10 +724,10 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
 
     // source
     ItemCount numOfSources = MIDIGetNumberOfSources();
-    for (int k = 0; k < numOfSources; k++) {
+    for (ItemCount k = 0; k < numOfSources; k++) {
         MIDIEndpointRef endpoint = MIDIGetSource(k);
 
-        int endpointUniqueId;
+        SInt32 endpointUniqueId;
         MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
         NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
 
@@ -740,10 +769,10 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
 
     // destination
     ItemCount numOfDestinations = MIDIGetNumberOfDestinations();
-    for (int k = 0; k < numOfDestinations; k++) {
+    for (ItemCount k = 0; k < numOfDestinations; k++) {
         MIDIEndpointRef endpoint = MIDIGetDestination(k);
 
-        int endpointUniqueId;
+        SInt32 endpointUniqueId;
         MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
         NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
 
