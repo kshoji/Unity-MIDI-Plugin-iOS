@@ -291,32 +291,61 @@ void SetMidiResetDelegate(OnMidiResetDelegate callback) {
 
 void sendMidiData(const char* deviceId, unsigned char* byteArray, int length) {
     ItemCount numOfDevices = MIDIGetNumberOfDevices();
-    for (int i = 0; i < numOfDevices; i++) {
-        MIDIDeviceRef midiDevice = MIDIGetDevice(i);
+    BOOL deviceFound = NO;
 
+    // First, try to find and send to the device through entities (for physical devices)
+    for (ItemCount i = 0; i < numOfDevices && !deviceFound; i++) {
+        MIDIDeviceRef midiDevice = MIDIGetDevice(i);
         ItemCount numOfEntities = MIDIDeviceGetNumberOfEntities(midiDevice);
+        
         for (ItemCount j = 0; j < numOfEntities; j++) {
             MIDIEntityRef midiEntity = MIDIDeviceGetEntity(midiDevice, j);
             ItemCount numOfDestinations = MIDIEntityGetNumberOfDestinations(midiEntity);
+            
             for (ItemCount k = 0; k < numOfDestinations; k++) {
                 MIDIEndpointRef endpoint = MIDIEntityGetDestination(midiEntity, k);
-
-                int endpointUniqueId;
+                
+                SInt32 endpointUniqueId;
                 MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
-                NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
-
-                // send to all matched destinations
-                if ([[NSString stringWithFormat:@"%@", endpointNumber] isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
-                    MIDIPacketList *packetListPtr = (MIDIPacketList *)((NSNumber *)packetLists[endpointNumber]).longValue;
-                    if (packetListPtr) {
-                        MIDIPacket *packet = MIDIPacketListInit(packetListPtr);
-                        packet = MIDIPacketListAdd(packetListPtr, 1024, packet, mach_absolute_time(), length, byteArray);
-
-                        OSStatus err;
-                        err = MIDISend(outputPort, endpoint, packetListPtr);
-                    }
+                NSString* endpointUniqueIdStr = [NSString stringWithFormat:@"%d", endpointUniqueId];
+                
+                if ([endpointUniqueIdStr isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
+                    deviceFound = YES;
+                    sendMidiPacketToDevice(endpoint, byteArray, length);
+                    break;
                 }
             }
+        }
+    }
+
+    // If the device wasn't found and it might be a virtual device, check destinations directly
+    if (!deviceFound) {
+        ItemCount numOfDestinations = MIDIGetNumberOfDestinations();
+        for (ItemCount i = 0; i < numOfDestinations; i++) {
+            MIDIEndpointRef endpoint = MIDIGetDestination(i);
+            
+            SInt32 endpointUniqueId;
+            MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
+            NSString* endpointUniqueIdStr = [NSString stringWithFormat:@"%d", endpointUniqueId];
+            
+            if ([endpointUniqueIdStr isEqualToString:[NSString stringWithUTF8String:deviceId]]) {
+                sendMidiPacketToDevice(endpoint, byteArray, length);
+                break;
+            }
+        }
+    }
+}
+
+void sendMidiPacketToDevice(MIDIEndpointRef endpoint, unsigned char* byteArray, int length) {
+    MIDIPacketList packetList;
+    MIDIPacket* packet = MIDIPacketListInit(&packetList);
+    packet = MIDIPacketListAdd(&packetList, sizeof(packetList), packet, mach_absolute_time(), length, byteArray);
+    
+    if (packet) {
+        OSStatus err = MIDISend(outputPort, endpoint, &packetList);
+        if (err != noErr) {
+            // Handle the error
+            NSLog(@"Error sending MIDI data: %d", (int)err);
         }
     }
 }
