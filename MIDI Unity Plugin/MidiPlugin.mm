@@ -381,7 +381,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                         // sysex finished
                         if (onMidiSystemExclusive) {
                             unsigned char* sysexData = new unsigned char[[sysexArray count]];
-                            for (int i = 0; i < [sysexArray count]; i++) {
+                            for (NSUInteger i = 0; i < [sysexArray count]; i++) {
                                 sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
                             }
                             onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, (int)[sysexArray count]);
@@ -397,7 +397,7 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                 dataIndex++;
             } else {
                 // process channel messages
-                int status = packet->data[dataIndex];
+                Byte status = packet->data[dataIndex];
                 switch (status & 0xf0) {
                     case 0x80:
                         if (dataIndex + 2 >= packet->length) {
@@ -565,11 +565,11 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
                                     // sysex finished
                                     if (onMidiSystemExclusive) {
                                         unsigned char* sysexData = new unsigned char[[sysexArray count]];
-                                        for (int i = 0; i < [sysexArray count]; i++) {
+                                        for (NSUInteger i = 0; i < [sysexArray count]; i++) {
                                             sysexData[i] = ((NSNumber *)[sysexArray objectAtIndex: i]).unsignedCharValue;
                                         }
                                         onMidiSystemExclusive([NSString stringWithFormat:@"%@", endpointId].UTF8String, 0, sysexData, (int)[sysexArray count]);
-                                         delete[] sysexData;
+                                        delete[] sysexData;
                                     } else {
                                         UnitySendMessage(GAME_OBJECT_NAME, "OnMidiSystemExclusive", sysex.UTF8String);
                                     }
@@ -724,10 +724,10 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
 
     // source
     ItemCount numOfSources = MIDIGetNumberOfSources();
-    for (int k = 0; k < numOfSources; k++) {
+    for (ItemCount k = 0; k < numOfSources; k++) {
         MIDIEndpointRef endpoint = MIDIGetSource(k);
 
-        int endpointUniqueId;
+        SInt32 endpointUniqueId;
         MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
         NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
 
@@ -769,10 +769,10 @@ void midiInputCallback(const MIDIPacketList *list, void *procRef, void *srcRef) 
 
     // destination
     ItemCount numOfDestinations = MIDIGetNumberOfDestinations();
-    for (int k = 0; k < numOfDestinations; k++) {
+    for (ItemCount k = 0; k < numOfDestinations; k++) {
         MIDIEndpointRef endpoint = MIDIGetDestination(k);
 
-        int endpointUniqueId;
+        SInt32 endpointUniqueId;
         MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &endpointUniqueId);
         NSNumber* endpointNumber = [NSNumber numberWithInt:endpointUniqueId];
 
